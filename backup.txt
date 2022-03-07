@@ -1,0 +1,97 @@
+// Promise.all(requests).then((body) => {
+    //   body.forEach((res) => {
+    //     productsToReturn.push(JSON.parse(res));
+    //   });
+    //   for (let i = 0; i < productsToReturn.length; i++) {
+    //     let pokemonRes = {
+    //       name: productsToReturn[i].name,
+    //       height: productsToReturn[i].height,
+    //       weight: productsToReturn[i].weight,
+    //       abilities: productsToReturn[i].abilities.map((ability) => {
+    //         return {
+    //           name: ability.ability.name,
+    //           slot: ability.slot,
+    //           is_hidden: ability.is_hidden,
+    //         };
+    //       }),
+    //       held_items:
+    //         productsToReturn[i].held_items[0] === undefined
+    //           ? null
+    //           : {
+    //               name: productsToReturn[i].held_items[0].item.name,
+    //               url: productsToReturn[i].held_items[0].item.url,
+    //             },
+    //     };
+
+    //     newPokemons.push(pokemonRes);
+    //   }
+    //   for (let pokemon of newPokemons) {
+    //     const newEntry = new Pokemon({
+    //       name: pokemon.name,
+    //       height: pokemon.height,
+    //       weight: pokemon.weight,
+    //       abilities: pokemon.abilities,
+    //       held_items: pokemon.held_items,
+    //     });
+    //     await newEntry.save();
+    //   }
+    //   res.status(200).send(newPokemons);
+    // });
+
+
+  // Singurul lucru care nu mi-a iesit din toata aplicatia a fost cea cu a face fetch in baza de date la toti cei 100 de pokemoni. Am incercat insa sa fac ceva recusiv si merge, in ideea 
+  // ca recursivitatea functioneaza, insa nu cum ar trebui. Am facut doua variante de recursivitate, a doua varianta fiind cea corecta
+
+    request({ method: "GET", uri: uri }, (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+          const pokemonsWithUrls = JSON.parse(body);
+          if (pokemonsWithUrls.results.length >= 100) {
+            console.log(pokemonsWithUrls.results);
+            return;
+          }
+          pokemonsWithUrls.results.push(getUri(pokemonsWithUrls.next));
+          res.send(pokemonsWithUrls.results);
+          // fs.writeFile(
+          //   "pokemons.json",
+          //   JSON.stringify(pokemonsWithUrls, null, 2),
+          //   (err) => {
+          //     if (err) {
+          //       throw err;
+          //     }
+          //   }
+          // );
+        }
+      });
+
+//-------------------------------------------------------------------
+router.get(
+  "/get-uris",
+  (req, res, next) => {
+    function getUri(uri) {
+      request({ method: "GET", uri: uri }, (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+          const pokemonsWithUrls = JSON.parse(body);
+
+          if (pokemonsWithUrls.results.length <= 100) {
+            pokemonsWithUrls.results.push(getUri(pokemonsWithUrls.next));
+          }
+          console.log(pokemonsWithUrls.results);
+          fs.writeFile(
+            "pokemons.json",
+            JSON.stringify(pokemonsWithUrls, null, 2),
+            (err) => {
+              if (err) {
+                throw err;
+              }
+            }
+          );
+          return;
+        }
+      });
+    }
+    getUri(pokeAPI);
+  }
+  // getAllPokemons
+);
+
+//-----------------------------------------------------------------------
