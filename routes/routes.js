@@ -52,6 +52,7 @@ router.get("/get-uris", async (req, res, next) => {
   }
   // let result1 = JSON.parse(JSON.stringify(result));
   console.log(result);
+  console.log("success");
   res.send(result);
 });
 
