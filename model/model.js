@@ -12,7 +12,7 @@ const PokemonSchema = new mongoose.Schema(
         name: "string",
       },
     ],
-    held_items: {
+    firts_held_item: {
       name: "string",
       url: "string",
     },
