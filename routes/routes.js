@@ -10,6 +10,8 @@ const pokemonValidation = require("../helpers/validation");
 
 const pokeAPI = "https://pokeapi.co/api/v2/pokemon/";
 
+//I hope the axios request is ok now
+
 router.get("/populate-database", async (req, res) => {
   try {
     let response = await axios.get(pokeAPI);
