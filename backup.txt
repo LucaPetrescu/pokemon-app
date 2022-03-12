@@ -95,3 +95,37 @@ router.get(
 );
 
 //-----------------------------------------------------------------------
+
+router.get("/get-uris", async (req, res, next) => {
+  // request({ method: "GET", uri: pokeAPI }, (error, response, body) => {
+  //   if (!error && response.statusCode == 200) {
+  //     const pokemonsWithUrls = JSON.parse(body);
+  //     fs.writeFile(
+  //       "pokemons.json",
+  //       JSON.stringify(pokemonsWithUrls, null, 2),
+  //       (err) => {
+  //         if (err) {
+  //           throw err;
+  //         }
+  //       }
+  //     );
+  //     res.status(200).send(pokemonsWithUrls);
+  //   }
+  // });
+  const response = await axios.get(pokeAPI);
+  console.log(response.data.results);
+  let i = 0;
+  let pokemon = {};
+  let result = [];
+  while (response.data.results[i]) {
+    pokemon = response.data.results[i];
+    let pokemonUrl = pokemon.url;
+    let urlResponse = await axios.get(pokemonUrl);
+    result.push(urlResponse.data);
+    i += 1;
+  }
+  // let result1 = JSON.parse(JSON.stringify(result));
+  console.log(result);
+  console.log("success");
+  res.send(result);
+});
