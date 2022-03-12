@@ -1,14 +1,16 @@
 const express = require("express");
 const router = express.Router();
-const request = require("request");
 const fs = require("fs");
 const axios = require("axios");
+const createError = require("http-errors");
+const httpCodes = require("http-status-codes");
 
 const Pokemon = require("../model/model");
 const pokemonValidation = require("../helpers/validation");
+
 const pokeAPI = "https://pokeapi.co/api/v2/pokemon/";
 
-router.get("/populate-database", async (req, res, next) => {
+router.get("/populate-database", async (req, res) => {
   let response = await axios.get(pokeAPI);
   console.log(response.data.next);
   let pokemonsWithAllStats = [];
@@ -58,50 +60,58 @@ router.get("/populate-database", async (req, res, next) => {
   res.send(finalPokemons);
 });
 
-router.post(
-  "/create-pokemon",
-  async (req, res, next) => {
-    const { name, height, weight, abilities } = req.body;
-    try {
+router.post("/create-pokemon", async (req, res) => {
+  const { value, error } = pokemonValidation(req.body);
+  try {
+    if (error) {
+      let err = createError(404, { error: error.details[0].message });
+      res.send(err);
+    } else {
       const newPokemon = new Pokemon({
-        name,
-        height,
-        weight,
-        abilities,
+        name: value.name,
+        height: value.height,
+        weight: value.weight,
+        abilities: value.abilities,
       });
-      await newPokemon.save();
-      console.log(newPokemon);
-      // res.send(newPokemon);
-      next();
-    } catch (err) {
-      res.status(500).send(err);
+      const newPoke = await newPokemon.save();
+      res.status(200).send(newPoke);
     }
-  },
-  getAllPokemons
-);
+  } catch (err) {
+    let e = createError(500, { error: err.message });
+    res.send(e);
+  }
+});
 
-router.post(
-  "/update-pokemon",
-  async (req, res, next) => {
-    const { id, name, height, weight, abilities } = req.body;
-    try {
+router.post("/update-pokemon", async (req, res) => {
+  const { id, name, height, weight, abilities } = req.body;
+  const { value, error } = pokemonValidation({
+    name,
+    height,
+    weight,
+    abilities,
+  });
+  try {
+    if (error) {
+      let err = createError(404, { error: error.details[0].message });
+      res.send(err);
+    } else {
       const pokemon = await Pokemon.findOne({ _id: id });
       let newPokemon = {
         $set: {
-          name: name,
-          height: height,
-          weight: weight,
-          abilities: abilities,
+          name: value.name,
+          height: value.height,
+          weight: value.weight,
+          abilities: value.abilities,
         },
       };
       let updatedPokemon = await Pokemon.updateOne(pokemon, newPokemon);
-      next();
-    } catch (err) {
-      res.status(500).send(err);
+      res.status(200).send(newPokemon);
     }
-  },
-  getAllPokemons
-);
+  } catch (err) {
+    let e = createError(500, { error: err.message });
+    res.send(e);
+  }
+});
 
 router.post("/get-pokemon-by-id", async (req, res) => {
   const { id } = req.body;
