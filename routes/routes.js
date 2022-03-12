@@ -11,53 +11,59 @@ const pokemonValidation = require("../helpers/validation");
 const pokeAPI = "https://pokeapi.co/api/v2/pokemon/";
 
 router.get("/populate-database", async (req, res) => {
-  let response = await axios.get(pokeAPI);
-  console.log(response.data.next);
-  let pokemonsWithAllStats = [];
-  let pokemon = {};
-  let result = [];
-  let finalPokemons = [];
-  for (let i = 0; i < 5; i++) {
-    let pokemonUrl = response.data.next;
-    let urlResponse = await axios.get(pokemonUrl);
-    let x = 0;
-    while (urlResponse.data.results[x]) {
-      result.push(urlResponse.data.results[x]);
-      x += 1;
+  try {
+    let response = await axios.get(pokeAPI);
+    console.log(response.data.next);
+    let pokemonsWithAllStats = [];
+    let pokemon = {};
+    let result = [];
+    let finalPokemons = [];
+    for (let i = 0; i < 5; i++) {
+      let pokemonUrl = response.data.next;
+      let urlResponse = await axios.get(pokemonUrl);
+      let x = 0;
+      while (urlResponse.data.results[x]) {
+        result.push(urlResponse.data.results[x]);
+        x += 1;
+      }
+      response = urlResponse;
     }
-    response = urlResponse;
-  }
-  for (let i = 0; i < result.length; i++) {
-    let pokemon = await axios.get(result[i].url);
-    pokemonsWithAllStats.push(pokemon.data);
-  }
 
-  for (let i = 0; i < pokemonsWithAllStats.length; i++) {
-    let pokemonRes = {
-      name: pokemonsWithAllStats[i].name,
-      height: pokemonsWithAllStats[i].height,
-      weight: pokemonsWithAllStats[i].weight,
-      abilities: pokemonsWithAllStats[i].abilities.map((ability) => {
-        return {
-          name: ability.ability.name,
-          slot: ability.slot,
-          is_hidden: ability.is_hidden,
-        };
-      }),
-      first_held_item:
-        pokemonsWithAllStats[i].held_items[0] === undefined
-          ? null
-          : {
-              name: pokemonsWithAllStats[i].held_items[0].item.name,
-              url: pokemonsWithAllStats[i].held_items[0].item.url,
-            },
-    };
-    finalPokemons.push(pokemonRes);
-  }
+    for (let i = 0; i < result.length; i++) {
+      let pokemon = await axios.get(result[i].url);
+      pokemonsWithAllStats.push(pokemon.data);
+    }
 
-  await Pokemon.insertMany(finalPokemons);
-  console.log(finalPokemons);
-  res.send(finalPokemons);
+    for (let i = 0; i < pokemonsWithAllStats.length; i++) {
+      let pokemonRes = {
+        name: pokemonsWithAllStats[i].name,
+        height: pokemonsWithAllStats[i].height,
+        weight: pokemonsWithAllStats[i].weight,
+        abilities: pokemonsWithAllStats[i].abilities.map((ability) => {
+          return {
+            name: ability.ability.name,
+            slot: ability.slot,
+            is_hidden: ability.is_hidden,
+          };
+        }),
+        first_held_item:
+          pokemonsWithAllStats[i].held_items[0] === undefined
+            ? null
+            : {
+                name: pokemonsWithAllStats[i].held_items[0].item.name,
+                url: pokemonsWithAllStats[i].held_items[0].item.url,
+              },
+      };
+      finalPokemons.push(pokemonRes);
+    }
+
+    await Pokemon.insertMany(finalPokemons);
+    console.log(finalPokemons);
+    res.send(finalPokemons);
+  } catch (err) {
+    let e = createError(500, { error: err.message });
+    res.send(e);
+  }
 });
 
 router.post("/create-pokemon", async (req, res) => {
@@ -119,42 +125,38 @@ router.post("/get-pokemon-by-id", async (req, res) => {
     let searchedPokemon = await Pokemon.findOne({ _id: id });
     res.status(200).send(searchedPokemon);
   } catch (err) {
-    res.status(500).send(err);
+    let e = createError(500, { error: err.message });
+    res.send(e);
   }
 });
 
-router.post(
-  "/delete-pokemon",
-  async (req, res, next) => {
-    try {
-      await Pokemon.deleteOne({ _id: req.body.id });
-      next();
-    } catch (err) {
-      res.status(500).send(err);
-    }
-  },
-  getAllPokemons
-);
+router.post("/delete-pokemon", async (req, res) => {
+  try {
+    await Pokemon.deleteOne({ _id: req.body.id });
+    res.send("NO_CONTENT");
+  } catch (err) {
+    let e = createError(500, { error: err.message });
+    res.send(e);
+  }
+});
 
-router.post(
-  "/delete-all-pokemons",
-  async (req, res, next) => {
-    try {
-      await Pokemon.remove();
-      next();
-    } catch (err) {
-      res.status(500).send(err);
-    }
-  },
-  getAllPokemons
-);
+router.post("/delete-all-pokemons", async (req, res) => {
+  try {
+    await Pokemon.remove();
+    res.send("All items deleted");
+  } catch (err) {
+    let e = createError(500, { error: err.message });
+    res.send(e);
+  }
+});
 
 router.get("/get-all-pokemons", async (req, res) => {
   try {
     const pokemons = await Pokemon.find();
     res.status(200).send(pokemons);
   } catch (err) {
-    res.status(500).send(err);
+    let e = createError(500, { error: err.message });
+    res.send(e);
   }
 });
 
