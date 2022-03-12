@@ -8,7 +8,7 @@ const Pokemon = require("../model/model");
 const pokemonValidation = require("../helpers/validation");
 const pokeAPI = "https://pokeapi.co/api/v2/pokemon/";
 
-router.get("/get-all-uris", async (req, res, next) => {
+router.get("/populate-database", async (req, res, next) => {
   let response = await axios.get(pokeAPI);
   console.log(response.data.next);
   let pokemonsWithAllStats = [];
