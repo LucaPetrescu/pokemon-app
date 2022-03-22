@@ -28,20 +28,23 @@ router.get("/populate-database", async (req, res) => {
         result.push(urlResponse.data.results[x]);
         x += 1;
       }
+
       response = urlResponse;
     }
-    //Push all the pokemons in an array
+    // Push all the pokemons in an array
+
     for (let i = 0; i < result.length; i++) {
       let pokemon = await axios.get(result[i].url);
       pokemonsWithAllStats.push(pokemon.data);
     }
-    //Create the pokemon object and push it into a new array
-    for (let i = 0; i < pokemonsWithAllStats.length; i++) {
-      let pokemonRes = {
-        name: pokemonsWithAllStats[i].name,
-        height: pokemonsWithAllStats[i].height,
-        weight: pokemonsWithAllStats[i].weight,
-        abilities: pokemonsWithAllStats[i].abilities.map((ability) => {
+
+    //Used map instead of pushing into an array
+    const finalResultPokemons = pokemonsWithAllStats.map((i) => {
+      return {
+        name: i.name,
+        height: i.height,
+        weight: i.weight,
+        abilities: i.abilities.map((ability) => {
           return {
             name: ability.ability.name,
             slot: ability.slot,
@@ -49,19 +52,18 @@ router.get("/populate-database", async (req, res) => {
           };
         }),
         first_held_item:
-          pokemonsWithAllStats[i].held_items[0] === undefined
+          i.held_items[0] === undefined
             ? null
             : {
-                name: pokemonsWithAllStats[i].held_items[0].item.name,
-                url: pokemonsWithAllStats[i].held_items[0].item.url,
+                name: i.held_items[0].item.name,
+                url: i.held_items[0].item.url,
               },
       };
-      finalPokemons.push(pokemonRes);
-    }
+    });
+
     //Using mass add for actualizing the database
-    await Pokemon.insertMany(finalPokemons);
-    console.log(finalPokemons);
-    res.send(finalPokemons);
+    await Pokemon.insertMany(finalResultPokemons);
+    res.send(finalResultPokemons);
   } catch (err) {
     let e = createError(500, { error: err.message });
     res.send(e);
